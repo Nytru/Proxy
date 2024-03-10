@@ -1,0 +1,51 @@
+version: '3'
+
+services:
+  reverse-proxy:
+    # The official v2 Traefik docker image
+    image: traefik:v2.11
+    # Enables the web UI and tells Traefik to listen to docker
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--entrypoints.websecure.address=:443"
+#      - "--providers.file.filename=/etc/traefik/config/dynamic.yaml"
+
+    ports:
+      # The HTTP port
+      - "443:8099"
+      # The Web UI (enabled by --api.insecure=true)
+      - "8080:8080"
+    volumes:
+      # So that Traefik can listen to the Docker events
+      - /var/run/docker.sock:/var/run/docker.sock
+#      - ./traefik/dynamic.yaml:/etc/traefik/config/dynamic.yaml
+#      - ./traefik/traefik.yaml:/etc/traefik/traefik.yaml
+    labels:
+      - "traefik.http.middlewares.test-redirectscheme.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.test-redirectscheme.redirectscheme.permanent=true"
+      - "traefik.http.middlewares.test-redirectscheme.redirectscheme.port=443"
+
+  whoami:
+    # A container that exposes an API to show its IP address
+    image: traefik/whoami
+    labels:
+#      - "traefik.http.routers.whoami.rule=Host(`whoami.docker.localhost`)"
+      - "traefik.http.routers.whoami.rule=Path(`/foo`)"
+  
+  my-proxy-service:
+    build:
+      context: ./ProxyTry
+      dockerfile: Dockerfile
+    image: my-proxy-service
+    environment:
+      - ASPNETCORE_HTTP_PORTS=5212
+#    ports:
+#      - "5212:5212"
+    labels:
+      - "traefik.http.middlewares.test-redirectscheme.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.test-redirectscheme.redirectscheme.permanent=true"
+      - "traefik.http.middlewares.test-redirectscheme.redirectscheme.port=443"
+      - "traefik.https.routers.my-proxy-service.rule=Host(`localhost`)"
+      - "traefik.https.routers.my-proxy-service.rule=PathPrefix(`/api`)"
+      - "traefik.https.services.my-proxy-service.loadbalancer.server.port=5212"

@@ -1,0 +1,25 @@
+entryPoints:
+  web:
+    address: :80
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+
+  websecure:
+    address: :443
+
+#http:
+#  routers:
+#    backend:
+#      rule: "PathPrefix(`/api`)"
+#      service: my-proxy-service
+#      entryPoints:
+#        - backend
+#
+#  services:
+#    my-proxy-service:
+#      loadBalancer:
+#        servers:
+#          - url: "http://host.docker.internal:5212"
